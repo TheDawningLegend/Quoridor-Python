@@ -2,8 +2,8 @@ from collections import deque
 import pygame
 import sys
 
-from settings import *
 from game import Game
+from settings import *
 
 game = Game()
 
@@ -21,32 +21,6 @@ clock = pygame.time.Clock()
 # =====================================
 # HELPERS
 # =====================================
-
-def board_to_screen(row, col):
-    x = BOARD_OFFSET_X + col * (CELL_SIZE + WALL_SIZE)
-    y = BOARD_OFFSET_Y + row * (CELL_SIZE + WALL_SIZE)
-
-    return x, y
-
-
-def screen_to_board(mouse_x, mouse_y):
-    for row in range(BOARD_SIZE):
-        for col in range(BOARD_SIZE):
-
-            x, y = board_to_screen(row, col)
-
-            rect = pygame.Rect(
-                x,
-                y,
-                CELL_SIZE,
-                CELL_SIZE
-            )
-
-            if rect.collidepoint(mouse_x, mouse_y):
-                return row, col
-
-    return None
-
 
 def get_valid_moves(player):
     directions = [
@@ -161,7 +135,7 @@ def get_wall_position(mouse_x, mouse_y):
     for row in range(BOARD_SIZE - 1):
         for col in range(BOARD_SIZE - 1):
 
-            x, y = board_to_screen(row, col)
+            x, y = game.board.board_to_screen(row, col)
 
             h_rect = pygame.Rect(
                 x,
@@ -298,42 +272,11 @@ def paths_exist():
 # DRAWING
 # =====================================
 
-def draw_board():
-    for row in range(BOARD_SIZE):
-        for col in range(BOARD_SIZE):
-
-            x = BOARD_OFFSET_X + col * (CELL_SIZE + WALL_SIZE)
-            y = BOARD_OFFSET_Y + row * (CELL_SIZE + WALL_SIZE)
-
-            rect = pygame.Rect(
-                x,
-                y,
-                CELL_SIZE,
-                CELL_SIZE
-            )
-
-            pygame.draw.rect(screen, CELL_COLOR, rect)
-
-
-def draw_player(player):
-    x, y = board_to_screen(player.row, player.col)
-
-    center_x = x + CELL_SIZE // 2
-    center_y = y + CELL_SIZE // 2
-
-    pygame.draw.circle(
-        screen,
-        player.color,
-        (center_x, center_y),
-        CELL_SIZE // 3
-    )
-
-
 def draw_valid_moves(player):
     valid_moves = get_valid_moves(player)
 
     for row, col in valid_moves:
-        x, y = board_to_screen(row, col)
+        x, y = game.board.board_to_screen(row, col)
 
         highlight_rect = pygame.Rect(
             x + 10,
@@ -347,7 +290,7 @@ def draw_valid_moves(player):
 
 def draw_walls():
     for row, col in game.horizontal_walls:
-        x, y = board_to_screen(row, col)
+        x, y = game.board.board_to_screen(row, col)
 
         rect = pygame.Rect(
             x,
@@ -359,7 +302,7 @@ def draw_walls():
         pygame.draw.rect(screen, WALL_COLOR, rect)
 
     for row, col in game.vertical_walls:
-        x, y = board_to_screen(row, col)
+        x, y = game.board.board_to_screen(row, col)
 
         rect = pygame.Rect(
             x + CELL_SIZE,
@@ -420,7 +363,7 @@ while running:
         ):
             mouse_x, mouse_y = pygame.mouse.get_pos()
 
-            clicked_cell = screen_to_board(mouse_x, mouse_y)
+            clicked_cell = game.board.screen_to_board(mouse_x, mouse_y)
 
             if clicked_cell:
                 current_player = game.current_player()
@@ -467,13 +410,13 @@ while running:
 
     screen.fill(BACKGROUND_COLOR)
 
-    draw_board()
+    game.board.draw(screen, game.board)
     draw_walls()
     draw_valid_moves(game.current_player())
     draw_winner()
 
     for player in game.players:
-        draw_player(player)
+        player.draw(screen, game.board)
 
     pygame.display.flip()
 

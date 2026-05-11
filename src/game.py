@@ -1,11 +1,14 @@
+from board import Board
 from player import Player
 from settings import *
 
 class Game:
     def __init__(self):
         self.reset()
-    
+
     def reset(self):
+        self.board = Board()
+
         self.player1 = Player(0, 4, BLUE)
         self.player2 = Player(8, 4, RED)
 
