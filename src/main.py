@@ -111,41 +111,55 @@ def get_valid_moves(player):
 
     valid_moves = []
 
+    opponent = None
+    for other_player in players:
+        if other_player != player:
+            opponent = other_player
+            break
+
     for row_offset, col_offset in directions:
-        target_row = player.row + row_offset
-        target_col = player.col + col_offset
+        adjacent_row = player.row + row_offset
+        adjacent_col = player.col + col_offset
 
         if not (
-            0 <= target_row < BOARD_SIZE and
-            0 <= target_col < BOARD_SIZE
+            0 <= adjacent_row < BOARD_SIZE and
+            0 <= adjacent_col < BOARD_SIZE
         ):
             continue
 
         if is_blocked(
             player.row,
             player.col,
-            target_row,
-            target_col
+            adjacent_row,
+            adjacent_col
         ):
             continue
 
-        occupied = False
+        if (
+            adjacent_row == opponent.row and
+            adjacent_col == opponent.col
+        ):
 
-        for other_player in players:
-            if other_player == player:
-                continue
+            jump_row = adjacent_row + row_offset
+            jump_col = adjacent_col + col_offset
 
             if (
-                other_player.row == target_row and
-                other_player.col == target_col
+                0 <= jump_row < BOARD_SIZE and
+                0 <= jump_col < BOARD_SIZE
             ):
-                occupied = True
-                break
+                if not is_blocked(
+                    adjacent_row,
+                    adjacent_col,
+                    jump_row,
+                    jump_col
+                ):
+                    valid_moves.append((jump_row, jump_col))
 
-        if occupied:
             continue
 
-        valid_moves.append((target_row, target_col))
+        valid_moves.append(
+            (adjacent_row, adjacent_col)
+        )
 
     return valid_moves
 
