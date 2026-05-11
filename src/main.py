@@ -347,6 +347,30 @@ def paths_exist():
         can_reach_goal(player2)
     )
 
+
+def reset_game():
+    global player1
+    global player2
+    global players
+    global current_player_index
+    global horizontal_walls
+    global vertical_walls
+    global game_over
+    global winner
+
+    player1 = Player(0, 4, BLUE)
+    player2 = Player(8, 4, RED)
+
+    players = [player1, player2]
+
+    current_player_index = 0
+
+    horizontal_walls = set()
+    vertical_walls = set()
+
+    game_over = False
+    winner = None
+
 # =====================================
 # DRAWING
 # =====================================
@@ -423,11 +447,36 @@ def draw_walls():
 
         pygame.draw.rect(screen, WALL_COLOR, rect)
 
+
+def draw_winner():
+    if not game_over:
+        return
+
+    if winner == player1:
+        text = "Blue Player Wins!"
+    else:
+        text = "Red Player Wins!"
+
+    surface = font.render(
+        text + "  (Press R to Restart)",
+        True,
+        (255, 255, 255)
+    )
+
+    rect = surface.get_rect(
+        center=(WINDOW_WIDTH // 2, 50)
+    )
+
+    screen.blit(surface, rect)
+
 # =====================================
 # MAIN LOOP
 # =====================================
 
 running = True
+game_over = False
+winner = None
+font = pygame.font.SysFont(None, 48)
 
 while running:
     clock.tick(FPS)
@@ -440,7 +489,13 @@ while running:
             if event.key == pygame.K_w:
                 wall_mode = not wall_mode
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.key == pygame.K_r:
+                reset_game()
+
+        if (
+            event.type == pygame.MOUSEBUTTONDOWN and
+            not game_over
+        ):
             mouse_x, mouse_y = pygame.mouse.get_pos()
 
             clicked_cell = screen_to_board(mouse_x, mouse_y)
@@ -452,6 +507,15 @@ while running:
                 if clicked_cell in valid_moves:
                     current_player.row = clicked_cell[0]
                     current_player.col = clicked_cell[1]
+
+                    if current_player == player1:
+                        if current_player.row == BOARD_SIZE - 1:
+                            game_over = True
+                            winner = player1
+                    elif current_player == player2:
+                        if current_player.row == 0:
+                            game_over = True
+                            winner = player2
 
                     current_player_index = (current_player_index + 1) % 2
 
@@ -484,6 +548,7 @@ while running:
     draw_board()
     draw_walls()
     draw_valid_moves(players[current_player_index])
+    draw_winner()
 
     for player in players:
         draw_player(player)
