@@ -19,6 +19,7 @@ class Game:
         self.current_player_index = 0
 
         self.walls = []
+        self.blocked_edges = set()
 
         self.game_over = False
         self.winner = None
@@ -30,43 +31,10 @@ class Game:
         self.current_player_index = 1 - self.current_player_index
 
     def is_blocked(self, start_row, start_col, target_row, target_col):
-        if target_row > start_row:
-            for wall in self.walls:
-                if wall.orientation == WallOrientation.HORIZONTAL:
-                    if (
-                        wall.row == start_row and
-                        wall.col in (start_col, start_col - 1)
-                    ):
-                        return True
-
-        elif target_row < start_row:
-            for wall in self.walls:
-                if wall.orientation == WallOrientation.HORIZONTAL:
-                    if (
-                        wall.row == target_row and
-                        wall.col in (target_col, target_col - 1)
-                    ):
-                        return True
-
-        elif target_col > start_col:
-            for wall in self.walls:
-                if wall.orientation == WallOrientation.VERTICAL:
-                    if (
-                        wall.col == start_col and
-                        wall.row in (start_row, start_row - 1)
-                    ):
-                        return True
-
-        elif target_col < start_col:
-            for wall in self.walls:
-                if wall.orientation == WallOrientation.VERTICAL:
-                    if (
-                        wall.col == target_col and
-                        wall.row in (target_row, target_row - 1)
-                    ):
-                        return True
-
-        return False
+        return self.is_edge_blocked(
+            (start_row, start_col),
+            (target_row, target_col)
+        )
 
     def get_neighbors(self, row, col):
         neighbors = []
@@ -219,3 +187,15 @@ class Game:
 
     def paths_exist(self):
         return all(self.can_reach_goal(player) for player in self.players)
+
+    def block_edge(self, cell1, cell2):
+        edge = frozenset([cell1, cell2])
+        self.blocked_edges.add(edge)
+
+    def unblock_edge(self, cell1, cell2):
+        edge = frozenset([cell1, cell2])
+        self.blocked_edges.discard(edge)
+
+    def is_edge_blocked(self, cell1, cell2):
+        edge = frozenset([cell1, cell2])
+        return edge in self.blocked_edges

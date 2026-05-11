@@ -15,6 +15,21 @@ class Wall(Drawable):
         self.col = col
         self.orientation = orientation
 
+    def get_blocked_edges(self):
+        r = self.row
+        c = self.col
+
+        if self.orientation == WallOrientation.HORIZONTAL:
+            return [
+                ((r, c), (r + 1, c)),
+                ((r, c + 1), (r + 1, c + 1))
+            ]
+        else:
+            return [
+                ((r, c), (r, c + 1)),
+                ((r + 1, c), (r + 1, c + 1))
+            ]
+
     def draw(self, screen, board):
         x, y = board.board_to_screen(self.row, self.col)
 

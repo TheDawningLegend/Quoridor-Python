@@ -182,13 +182,19 @@ while running:
 
                     if is_valid_wall(game, orientation, row, col):
                         new_wall = Wall(row, col, orientation)
+                        blocked_edges = new_wall.get_blocked_edges()
+
                         game.walls.append(new_wall)
+                        for edge in blocked_edges:
+                            game.block_edge(edge[0], edge[1])
 
                         if game.paths_exist():
                             current_player.walls_remaining -= 1
                             game.switch_turn()
                         else:
                             game.walls.remove(new_wall)
+                            for edge in blocked_edges:
+                                game.unblock_edge(edge[0], edge[1])
 
     screen.fill(BACKGROUND_COLOR)
 
