@@ -1,4 +1,3 @@
-from collections import deque
 import pygame
 import sys
 
@@ -16,118 +15,6 @@ clock = pygame.time.Clock()
 # =====================================
 # HELPERS
 # =====================================
-
-def get_valid_moves(player):
-    directions = [
-        (-1, 0),
-        (1, 0),
-        (0, -1),
-        (0, 1)
-    ]
-
-    valid_moves = []
-
-    opponent = None
-    for other_player in game.players:
-        if other_player != player:
-            opponent = other_player
-            break
-
-    for row_offset, col_offset in directions:
-        adjacent_row = player.row + row_offset
-        adjacent_col = player.col + col_offset
-
-        if not (
-            0 <= adjacent_row < BOARD_SIZE and
-            0 <= adjacent_col < BOARD_SIZE
-        ):
-            continue
-
-        if is_blocked(
-            game,
-            player.row,
-            player.col,
-            adjacent_row,
-            adjacent_col
-        ):
-            continue
-
-        if (
-            adjacent_row == opponent.row and
-            adjacent_col == opponent.col
-        ):
-            jump_row = adjacent_row + row_offset
-            jump_col = adjacent_col + col_offset
-
-            can_jump_straight = False
-
-            if (
-                0 <= jump_row < BOARD_SIZE and
-                0 <= jump_col < BOARD_SIZE
-            ):
-                if not is_blocked(
-                    game,
-                    adjacent_row,
-                    adjacent_col,
-                    jump_row,
-                    jump_col
-                ):
-                    can_jump_straight = True
-
-                    valid_moves.append(
-                        (jump_row, jump_col)
-                    )
-
-            if not can_jump_straight:
-                if row_offset != 0:
-                    diagonal_directions = [
-                        (0, -1),
-                        (0, 1)
-                    ]
-                else:
-                    diagonal_directions = [
-                        (-1, 0),
-                        (1, 0)
-                    ]
-
-                for diagonal_row_offset, diagonal_col_offset in diagonal_directions:
-                    diagonal_row = (
-                        adjacent_row +
-                        diagonal_row_offset
-                    )
-
-                    diagonal_col = (
-                        adjacent_col +
-                        diagonal_col_offset
-                    )
-
-                    if not (
-                        0 <= diagonal_row < BOARD_SIZE and
-                        0 <= diagonal_col < BOARD_SIZE
-                    ):
-                        continue
-
-                    if is_blocked(
-                        game,
-                        adjacent_row,
-                        adjacent_col,
-                        diagonal_row,
-                        diagonal_col
-                    ):
-                        continue
-
-                    valid_moves.append(
-                        (diagonal_row, diagonal_col)
-                    )
-
-            continue
-
-        valid_moves.append(
-            (adjacent_row, adjacent_col)
-        )
-
-    return valid_moves
-
 
 def get_wall_position(mouse_x, mouse_y):
     for row in range(BOARD_SIZE - 1):
@@ -199,110 +86,12 @@ def is_valid_wall(game, orientation, row, col):
     return not wall_overlaps(game, new_wall)
 
 
-def is_blocked(game, start_row, start_col, target_row, target_col):
-    if target_row > start_row:
-        for wall in game.walls:
-            if wall.orientation == WallOrientation.HORIZONTAL:
-                if (
-                    wall.row == start_row and
-                    wall.col in (start_col, start_col - 1)
-                ):
-                    return True
-
-    elif target_row < start_row:
-        for wall in game.walls:
-            if wall.orientation == WallOrientation.HORIZONTAL:
-                if (
-                    wall.row == target_row and
-                    wall.col in (target_col, target_col - 1)
-                ):
-                    return True
-
-    elif target_col > start_col:
-        for wall in game.walls:
-            if wall.orientation == WallOrientation.VERTICAL:
-                if (
-                    wall.col == start_col and
-                    wall.row in (start_row, start_row - 1)
-                ):
-                    return True
-
-    elif target_col < start_col:
-        for wall in game.walls:
-            if wall.orientation == WallOrientation.VERTICAL:
-                if (
-                    wall.col == target_col and
-                    wall.row in (target_row, target_row - 1)
-                ):
-                    return True
-
-    return False
-
-
-def can_reach_goal(player):
-    visited = set()
-
-    queue = deque()
-    queue.append((player.row, player.col))
-
-    visited.add((player.row, player.col))
-
-    directions = [
-        (-1, 0),
-        (1, 0),
-        (0, -1),
-        (0, 1)
-    ]
-
-    while queue:
-        row, col = queue.popleft()
-
-        if player == game.player1 and row == 8:
-            return True
-        if player == game.player2 and row == 0:
-            return True
-
-        for dr, dc in directions:
-            new_row = row + dr
-            new_col = col + dc
-
-            if not (
-                0 <= new_row < BOARD_SIZE and
-                0 <= new_col < BOARD_SIZE
-            ):
-                continue
-
-            if (new_row, new_col) in visited:
-                continue
-
-            if is_blocked(
-                game,
-                row,
-                col,
-                new_row,
-                new_col
-            ):
-                continue
-
-            visited.add((new_row, new_col))
-
-            queue.append((new_row, new_col))
-
-    return False
-
-
-def paths_exist():
-    return (
-        can_reach_goal(game.player1) and
-        can_reach_goal(game.player2)
-    )
-
 # =====================================
 # DRAWING
 # =====================================
 
 def draw_valid_moves(player):
-    valid_moves = get_valid_moves(player)
+    valid_moves = game.get_valid_moves(player)
 
     for row, col in valid_moves:
         x, y = game.board.board_to_screen(row, col)
@@ -366,7 +155,7 @@ while running:
 
             if clicked_cell:
                 current_player = game.current_player()
-                valid_moves = get_valid_moves(current_player)
+                valid_moves = game.get_valid_moves(current_player)
 
                 if clicked_cell in valid_moves:
                     current_player.row = clicked_cell[0]
@@ -395,7 +184,7 @@ while running:
                         new_wall = Wall(row, col, orientation)
                         game.walls.append(new_wall)
 
-                        if paths_exist():
+                        if game.paths_exist():
                             current_player.walls_remaining -= 1
                             game.switch_turn()
                         else:
