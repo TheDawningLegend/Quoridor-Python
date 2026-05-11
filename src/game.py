@@ -1,7 +1,6 @@
 from collections import deque
 from board import Board
 from player import Player
-from wall import WallOrientation
 from settings import *
 
 class Game:
@@ -51,12 +50,15 @@ class Game:
             new_col = col + dc
 
             if not (
-                    0 <= new_row < BOARD_SIZE and
-                    0 <= new_col < BOARD_SIZE
+                0 <= new_row < BOARD_SIZE and
+                0 <= new_col < BOARD_SIZE
             ):
                 continue
 
-            if self.is_blocked(row, col, new_row, new_col):
+            if self.is_edge_blocked(
+                (row, col),
+                (new_row, new_col)
+            ):
                 continue
 
             neighbors.append((new_row, new_col))
@@ -71,93 +73,82 @@ class Game:
         return None
 
     def get_valid_moves(self, player: Player):
-        directions = [
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1)
-        ]
-
         valid_moves = []
 
         opponent = self.get_opponent(player)
 
-        for dr, dc in directions:
-            adjacent_row = player.row + dr
-            adjacent_col = player.col + dc
+        neighbors = self.get_neighbors(
+            player.row,
+            player.col
+        )
 
-            if not (
-                0 <= adjacent_row < BOARD_SIZE and
-                0 <= adjacent_col < BOARD_SIZE
+        for neighbor_row, neighbor_col in neighbors:
+            if (
+                neighbor_row != opponent.row or
+                neighbor_col != opponent.col
             ):
+                valid_moves.append(
+                    (neighbor_row, neighbor_col)
+                )
+
                 continue
 
-            if self.is_blocked(
-                player.row,
-                player.col,
-                adjacent_row,
-                adjacent_col
-            ):
-                continue
+            row_direction = neighbor_row - player.row
+            col_direction = neighbor_col - player.col
+
+            jump_row = neighbor_row + row_direction
+            jump_col = neighbor_col + col_direction
 
             if (
-                adjacent_row == opponent.row and
-                adjacent_col == opponent.col
+                0 <= jump_row < BOARD_SIZE and
+                0 <= jump_col < BOARD_SIZE and
+                not self.is_edge_blocked(
+                    (neighbor_row, neighbor_col),
+                    (jump_row, jump_col)
+                )
             ):
-                jump_row = adjacent_row + dr
-                jump_col = adjacent_col + dc
+                valid_moves.append(
+                    (jump_row, jump_col)
+                )
 
-                if (
-                    0 <= jump_row < BOARD_SIZE and
-                    0 <= jump_col < BOARD_SIZE and
-                    not self.is_blocked(
-                        adjacent_row,
-                        adjacent_col,
-                        jump_row,
-                        jump_col
-                    )
-                ):
-                    valid_moves.append((jump_row, jump_col))
-
+            else:
+                if row_direction != 0:
+                    diagonal_directions = [
+                        (0, -1),
+                        (0, 1)
+                    ]
                 else:
-                    if dr != 0:
-                        side_directions = [
-                            (0, -1),
-                            (0, 1)
-                        ]
-                    else:
-                        side_directions = [
-                            (-1, 0),
-                            (1, 0)
-                        ]
+                    diagonal_directions = [
+                        (-1, 0),
+                        (1, 0)
+                    ]
 
-                    for side_dr, side_dc in side_directions:
-                        diagonal_row = adjacent_row + side_dr
-                        diagonal_col = adjacent_col + side_dc
+                for diagonal_row_direction, diagonal_col_direction in diagonal_directions:
+                    diagonal_row = (
+                        neighbor_row +
+                        diagonal_row_direction
+                    )
 
-                        if not (
-                            0 <= diagonal_row < BOARD_SIZE and
-                            0 <= diagonal_col < BOARD_SIZE
-                        ):
-                            continue
+                    diagonal_col = (
+                        neighbor_col +
+                        diagonal_col_direction
+                    )
 
-                        if self.is_blocked(
-                                adjacent_row,
-                                adjacent_col,
-                                diagonal_row,
-                                diagonal_col
-                        ):
-                            continue
+                    if not (
+                        0 <= diagonal_row < BOARD_SIZE and
+                        0 <= diagonal_col < BOARD_SIZE
+                    ):
+                        continue
 
-                        valid_moves.append(
-                            (diagonal_row, diagonal_col)
-                        )
+                    if self.is_edge_blocked(
+                        (neighbor_row, neighbor_col),
+                        (diagonal_row, diagonal_col)
+                    ):
+                        continue
 
-                continue
-
-            valid_moves.append(
-                (adjacent_row, adjacent_col)
-            )
+                    valid_moves.append(
+                        (diagonal_row, diagonal_col)
+                    )
 
         return valid_moves
 
