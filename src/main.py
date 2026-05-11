@@ -2,6 +2,7 @@ import pygame
 import sys
 
 from game import Game
+from player import Player
 from wall import Wall, WallOrientation
 from settings import *
 
@@ -37,9 +38,9 @@ def get_wall_position(mouse_x, mouse_y):
             )
 
             if h_rect.collidepoint(mouse_x, mouse_y):
-                return (WallOrientation.HORIZONTAL, row, col)
+                return WallOrientation.HORIZONTAL, row, col
             if v_rect.collidepoint(mouse_x, mouse_y):
-                return (WallOrientation.VERTICAL, row, col)
+                return WallOrientation.VERTICAL, row, col
 
     return None
 
@@ -58,7 +59,7 @@ def get_wall_segments(wall):
         }
 
 
-def wall_overlaps(game, new_wall):
+def wall_overlaps(game: Game, new_wall):
     new_segments = get_wall_segments(new_wall)
 
     for wall in game.walls:
@@ -68,7 +69,7 @@ def wall_overlaps(game, new_wall):
     return False
 
 
-def is_valid_wall(game, orientation, row, col):
+def is_valid_wall(game: Game, orientation, row, col):
     if orientation == WallOrientation.HORIZONTAL:
         if row < 0 or row >= BOARD_SIZE - 1:
             return False
@@ -90,7 +91,7 @@ def is_valid_wall(game, orientation, row, col):
 # DRAWING
 # =====================================
 
-def draw_valid_moves(player):
+def draw_valid_moves(player: Player):
     valid_moves = game.get_valid_moves(player)
 
     for row, col in valid_moves:

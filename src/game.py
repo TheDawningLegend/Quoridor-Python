@@ -29,12 +29,6 @@ class Game:
     def switch_turn(self):
         self.current_player_index = 1 - self.current_player_index
 
-    def is_blocked(self, start_row, start_col, target_row, target_col):
-        return self.is_edge_blocked(
-            (start_row, start_col),
-            (target_row, target_col)
-        )
-
     def get_neighbors(self, row, col):
         neighbors = []
 
