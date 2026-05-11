@@ -44,49 +44,6 @@ def get_wall_position(mouse_x, mouse_y):
 
     return None
 
-
-def get_wall_segments(wall):
-    r, c = wall.row, wall.col
-    if wall.orientation == WallOrientation.HORIZONTAL:
-        return {
-            ((r, c), (r + 1, c)),
-            ((r, c + 1), (r + 1, c + 1))
-        }
-    else:
-        return {
-            ((r, c), (r, c + 1)),
-            ((r + 1, c), (r + 1, c + 1))
-        }
-
-
-def wall_overlaps(game: Game, new_wall):
-    new_segments = get_wall_segments(new_wall)
-
-    for wall in game.walls:
-        if get_wall_segments(wall) & new_segments:
-            return True
-
-    return False
-
-
-def is_valid_wall(game: Game, orientation, row, col):
-    if orientation == WallOrientation.HORIZONTAL:
-        if row < 0 or row >= BOARD_SIZE - 1:
-            return False
-        if col < 0 or col >= BOARD_SIZE - 1:
-            return False
-
-    elif orientation == WallOrientation.VERTICAL:
-        if row < 0 or row >= BOARD_SIZE - 1:
-            return False
-        if col < 0 or col >= BOARD_SIZE - 1:
-            return False
-
-    new_wall = Wall(row, col, orientation)
-
-    return not wall_overlaps(game, new_wall)
-
-
 # =====================================
 # DRAWING
 # =====================================
@@ -139,8 +96,7 @@ def draw_wall_preview():
 
     orientation, row, col = result
 
-    valid = is_valid_wall(
-        game,
+    valid = game.is_valid_wall(
         orientation,
         row,
         col
@@ -234,21 +190,15 @@ while running:
                 if result:
                     orientation, row, col = result
 
-                    if is_valid_wall(game, orientation, row, col):
+                    if game.is_valid_wall(orientation, row, col):
                         new_wall = Wall(row, col, orientation)
-                        blocked_edges = new_wall.get_blocked_edges()
 
                         game.walls.append(new_wall)
-                        for edge in blocked_edges:
+                        for edge in new_wall.get_blocked_edges():
                             game.block_edge(edge[0], edge[1])
 
-                        if game.paths_exist():
-                            current_player.walls_remaining -= 1
-                            game.switch_turn()
-                        else:
-                            game.walls.remove(new_wall)
-                            for edge in blocked_edges:
-                                game.unblock_edge(edge[0], edge[1])
+                        current_player.walls_remaining -= 1
+                        game.switch_turn()
 
     screen.fill(BACKGROUND_COLOR)
 

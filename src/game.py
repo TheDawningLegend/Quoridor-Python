@@ -2,6 +2,8 @@ from collections import deque
 from board import Board
 from player import Player
 from settings import *
+from wall import WallOrientation, Wall
+
 
 class Game:
     def __init__(self):
@@ -167,6 +169,66 @@ class Game:
 
                 visited.add(neighbor)
                 queue.append(neighbor)
+
+        return False
+
+    def get_wall_segments(self, wall: Wall):
+        r, c = wall.row, wall.col
+        if wall.orientation == WallOrientation.HORIZONTAL:
+            return {
+                ((r, c), (r + 1, c)),
+                ((r, c + 1), (r + 1, c + 1))
+            }
+        else:
+            return {
+                ((r, c), (r, c + 1)),
+                ((r + 1, c), (r + 1, c + 1))
+            }
+
+    def wall_overlaps(self, new_wall):
+        new_segments = self.get_wall_segments(new_wall)
+
+        for wall in self.walls:
+            if self.get_wall_segments(wall) & new_segments:
+                return True
+
+        return False
+
+    def is_valid_wall(self, orientation, row, col):
+        if not (
+            0 <= row < BOARD_SIZE - 1 and
+            0 <= col < BOARD_SIZE - 1
+        ):
+            return False
+
+        new_wall = Wall(row, col, orientation)
+
+        if self.wall_overlaps(new_wall):
+            return False
+
+        if self.wall_crosses(new_wall):
+            return False
+
+        blocked_edges = new_wall.get_blocked_edges()
+
+        for edge in blocked_edges:
+            self.block_edge(edge[0], edge[1])
+
+        valid = self.paths_exist()
+
+        for edge in blocked_edges:
+            self.unblock_edge(edge[0], edge[1])
+
+        return valid
+
+    def wall_crosses(self, new_wall):
+        for wall in self.walls:
+            if (
+                wall.row == new_wall.row and
+                wall.col == new_wall.col and
+                wall.orientation != new_wall.orientation
+            ):
+                return True
 
         return False
 
