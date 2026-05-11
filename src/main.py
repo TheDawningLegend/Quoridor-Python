@@ -128,6 +128,59 @@ def draw_winner():
 
     screen.blit(surface, rect)
 
+
+def draw_wall_preview():
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+
+    result = get_wall_position(mouse_x, mouse_y)
+
+    if not result:
+        return
+
+    orientation, row, col = result
+
+    valid = is_valid_wall(
+        game,
+        orientation,
+        row,
+        col
+    )
+
+    color = (
+        VALID_PREVIEW_COLOR
+        if valid
+        else INVALID_PREVIEW_COLOR
+    )
+
+    x, y = game.board.board_to_screen(row, col)
+
+    if orientation == WallOrientation.HORIZONTAL:
+        rect = pygame.Rect(
+            x,
+            y + CELL_SIZE,
+            CELL_SIZE * 2 + WALL_SIZE,
+            WALL_SIZE
+        )
+    else:
+        rect = pygame.Rect(
+            x + CELL_SIZE,
+            y,
+            WALL_SIZE,
+            CELL_SIZE * 2 + WALL_SIZE
+        )
+
+    preview_surface = pygame.Surface(
+        (rect.width, rect.height),
+        pygame.SRCALPHA
+    )
+
+    preview_surface.fill((*color, 160))
+
+    screen.blit(
+        preview_surface,
+        (rect.x, rect.y)
+    )
+
 # =====================================
 # MAIN LOOP
 # =====================================
@@ -201,6 +254,7 @@ while running:
 
     game.board.draw(screen, game.board)
     draw_valid_moves(game.current_player())
+    draw_wall_preview()
     draw_winner()
     for wall in game.walls:
         wall.draw(screen, game.board)
