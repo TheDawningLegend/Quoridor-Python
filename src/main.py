@@ -39,6 +39,7 @@ BOARD_OFFSET_Y = (WINDOW_HEIGHT - BOARD_PIXEL_SIZE) // 2
 
 BACKGROUND_COLOR = (40, 40, 40)
 CELL_COLOR = (240, 220, 170)
+WALL_COLOR = (200, 200, 200)
 
 BLUE = (70, 120, 255)
 RED = (220, 70, 70)
@@ -62,6 +63,11 @@ player2 = Player(8, 4, RED)
 players = [player1, player2]
 
 current_player_index = 0
+
+horizontal_walls = set()
+vertical_walls = set()
+
+wall_mode = False
 
 # =====================================
 # HELPERS
@@ -123,6 +129,37 @@ def get_valid_moves(player):
 
     return valid_moves
 
+
+def get_wall_position(mouse_x, mouse_y):
+    for row in range(BOARD_SIZE - 1):
+        for col in range(BOARD_SIZE - 1):
+
+            x, y = board_to_screen(row, col)
+
+            # horizontal wall area
+            h_rect = pygame.Rect(
+                x,
+                y + CELL_SIZE,
+                CELL_SIZE * 2 + WALL_SIZE,
+                WALL_SIZE
+            )
+
+            # vertical wall area
+            v_rect = pygame.Rect(
+                x + CELL_SIZE,
+                y,
+                WALL_SIZE,
+                CELL_SIZE * 2 + WALL_SIZE
+            )
+
+            if h_rect.collidepoint(mouse_x, mouse_y):
+                return ("H", row, col)
+
+            if v_rect.collidepoint(mouse_x, mouse_y):
+                return ("V", row, col)
+
+    return None
+
 # =====================================
 # DRAWING
 # =====================================
@@ -173,6 +210,32 @@ def draw_valid_moves(player):
 
         pygame.draw.rect(screen, HIGHLIGHT_COLOR, highlight_rect)
 
+
+def draw_walls():
+    for row, col in horizontal_walls:
+        x, y = board_to_screen(row, col)
+
+        rect = pygame.Rect(
+            x,
+            y + CELL_SIZE,
+            CELL_SIZE * 2 + WALL_SIZE,
+            WALL_SIZE
+        )
+
+        pygame.draw.rect(screen, WALL_COLOR, rect)
+
+    for row, col in vertical_walls:
+        x, y = board_to_screen(row, col)
+
+        rect = pygame.Rect(
+            x + CELL_SIZE,
+            y,
+            WALL_SIZE,
+            CELL_SIZE * 2 + WALL_SIZE
+        )
+
+        pygame.draw.rect(screen, WALL_COLOR, rect)
+
 # =====================================
 # MAIN LOOP
 # =====================================
@@ -185,6 +248,10 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_w:
+                wall_mode = not wall_mode
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -201,10 +268,20 @@ while running:
 
                     current_player_index = (current_player_index + 1) % 2
 
+            if wall_mode:
+                result = get_wall_position(mouse_x, mouse_y)
+                if result:
+                    direction, row, col = result
+
+                    if direction == "H":
+                        horizontal_walls.add((row, col))
+                    elif direction == "V":
+                        vertical_walls.add((row, col))
+
     screen.fill(BACKGROUND_COLOR)
 
     draw_board()
-
+    draw_walls()
     draw_valid_moves(players[current_player_index])
 
     for player in players:
