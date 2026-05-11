@@ -9,14 +9,8 @@ from settings import *
 game = Game()
 
 pygame.init()
-
-# =====================================
-# WINDOW
-# =====================================
-
-screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Quoridor")
-
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 clock = pygame.time.Clock()
 
 # =====================================
@@ -350,7 +344,6 @@ def draw_winner():
 
 running = True
 font = pygame.font.SysFont(None, 48)
-wall_mode = False
 
 while running:
     clock.tick(FPS)
@@ -360,9 +353,6 @@ while running:
             running = False
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w:
-                wall_mode = not wall_mode
-
             if event.key == pygame.K_r:
                 game.reset()
 
@@ -393,24 +383,23 @@ while running:
 
                     game.switch_turn()
 
-            if wall_mode:
-                current_player = game.current_player()
+            current_player = game.current_player()
 
-                if current_player.walls_remaining > 0:
-                    result = get_wall_position(mouse_x, mouse_y)
+            if current_player.walls_remaining > 0:
+                result = get_wall_position(mouse_x, mouse_y)
 
-                    if result:
-                        orientation, row, col = result
+                if result:
+                    orientation, row, col = result
 
-                        if is_valid_wall(game, orientation, row, col):
-                            new_wall = Wall(row, col, orientation)
-                            game.walls.append(new_wall)
+                    if is_valid_wall(game, orientation, row, col):
+                        new_wall = Wall(row, col, orientation)
+                        game.walls.append(new_wall)
 
-                            if paths_exist():
-                                current_player.walls_remaining -= 1
-                                game.switch_turn()
-                            else:
-                                game.walls.remove(new_wall)
+                        if paths_exist():
+                            current_player.walls_remaining -= 1
+                            game.switch_turn()
+                        else:
+                            game.walls.remove(new_wall)
 
     screen.fill(BACKGROUND_COLOR)
 

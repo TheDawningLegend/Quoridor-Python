@@ -39,7 +39,6 @@ Walls block movement between squares.
 ## 🎮 Controls
 
 - **Left Click** → Move / Place wall
-- **W Key** → Toggle wall placement mode
 - **R Key** → Restart game
 
 ## 🚀 How to Run
