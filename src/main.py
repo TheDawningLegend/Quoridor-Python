@@ -136,24 +136,70 @@ def get_valid_moves(player):
             continue
 
         if (
-            adjacent_row == opponent.row and
-            adjacent_col == opponent.col
+                adjacent_row == opponent.row and
+                adjacent_col == opponent.col
         ):
-
             jump_row = adjacent_row + row_offset
             jump_col = adjacent_col + col_offset
 
+            can_jump_straight = False
+
             if (
-                0 <= jump_row < BOARD_SIZE and
-                0 <= jump_col < BOARD_SIZE
+                    0 <= jump_row < BOARD_SIZE and
+                    0 <= jump_col < BOARD_SIZE
             ):
                 if not is_blocked(
-                    adjacent_row,
-                    adjacent_col,
-                    jump_row,
-                    jump_col
+                        adjacent_row,
+                        adjacent_col,
+                        jump_row,
+                        jump_col
                 ):
-                    valid_moves.append((jump_row, jump_col))
+                    can_jump_straight = True
+
+                    valid_moves.append(
+                        (jump_row, jump_col)
+                    )
+
+            if not can_jump_straight:
+                if row_offset != 0:
+                    diagonal_directions = [
+                        (0, -1),
+                        (0, 1)
+                    ]
+                else:
+                    diagonal_directions = [
+                        (-1, 0),
+                        (1, 0)
+                    ]
+
+                for diagonal_row_offset, diagonal_col_offset in diagonal_directions:
+                    diagonal_row = (
+                            adjacent_row +
+                            diagonal_row_offset
+                    )
+
+                    diagonal_col = (
+                            adjacent_col +
+                            diagonal_col_offset
+                    )
+
+                    if not (
+                            0 <= diagonal_row < BOARD_SIZE and
+                            0 <= diagonal_col < BOARD_SIZE
+                    ):
+                        continue
+
+                    if is_blocked(
+                            adjacent_row,
+                            adjacent_col,
+                            diagonal_row,
+                            diagonal_col
+                    ):
+                        continue
+
+                    valid_moves.append(
+                        (diagonal_row, diagonal_col)
+                    )
 
             continue
 
