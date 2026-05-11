@@ -16,8 +16,7 @@ class Game:
 
         self.current_player_index = 0
 
-        self.horizontal_walls = set()
-        self.vertical_walls = set()
+        self.walls = []
 
         self.game_over = False
         self.winner = None

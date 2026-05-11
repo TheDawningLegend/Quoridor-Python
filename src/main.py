@@ -3,6 +3,7 @@ import pygame
 import sys
 
 from game import Game
+from wall import Wall, WallOrientation
 from settings import *
 
 game = Game()
@@ -49,6 +50,7 @@ def get_valid_moves(player):
             continue
 
         if is_blocked(
+            game,
             player.row,
             player.col,
             adjacent_row,
@@ -70,6 +72,7 @@ def get_valid_moves(player):
                 0 <= jump_col < BOARD_SIZE
             ):
                 if not is_blocked(
+                    game,
                     adjacent_row,
                     adjacent_col,
                     jump_row,
@@ -111,6 +114,7 @@ def get_valid_moves(player):
                         continue
 
                     if is_blocked(
+                        game,
                         adjacent_row,
                         adjacent_col,
                         diagonal_row,
@@ -152,61 +156,91 @@ def get_wall_position(mouse_x, mouse_y):
             )
 
             if h_rect.collidepoint(mouse_x, mouse_y):
-                return ("H", row, col)
+                return (WallOrientation.HORIZONTAL, row, col)
             if v_rect.collidepoint(mouse_x, mouse_y):
-                return ("V", row, col)
+                return (WallOrientation.VERTICAL, row, col)
 
     return None
 
 
-def is_valid_wall(direction, row, col):
-    if direction == "H":
-        if (row, col) in game.horizontal_walls:
-            return False
-        if (row, col - 1) in game.horizontal_walls:
-            return False
-        if (row, col + 1) in game.horizontal_walls:
-            return False
-        if (row, col) in game.vertical_walls:
-            return False
-
-    elif direction == "V":
-        if (row, col) in game.vertical_walls:
-            return False
-        if (row - 1, col) in game.vertical_walls:
-            return False
-        if (row + 1, col) in game.vertical_walls:
-            return False
-        if (row, col) in game.horizontal_walls:
-            return False
-
-    return True
+def get_wall_segments(wall):
+    r, c = wall.row, wall.col
+    if wall.orientation == WallOrientation.HORIZONTAL:
+        return {
+            ((r, c), (r + 1, c)),
+            ((r, c + 1), (r + 1, c + 1))
+        }
+    else:
+        return {
+            ((r, c), (r, c + 1)),
+            ((r + 1, c), (r + 1, c + 1))
+        }
 
 
-def is_blocked(start_row, start_col, target_row, target_col):
+def wall_overlaps(game, new_wall):
+    new_segments = get_wall_segments(new_wall)
+
+    for wall in game.walls:
+        if get_wall_segments(wall) & new_segments:
+            return True
+
+    return False
+
+
+def is_valid_wall(game, orientation, row, col):
+    if orientation == WallOrientation.HORIZONTAL:
+        if row < 0 or row >= BOARD_SIZE - 1:
+            return False
+        if col < 0 or col >= BOARD_SIZE - 1:
+            return False
+
+    elif orientation == WallOrientation.VERTICAL:
+        if row < 0 or row >= BOARD_SIZE - 1:
+            return False
+        if col < 0 or col >= BOARD_SIZE - 1:
+            return False
+
+    new_wall = Wall(row, col, orientation)
+
+    return not wall_overlaps(game, new_wall)
+
+
+def is_blocked(game, start_row, start_col, target_row, target_col):
     if target_row > start_row:
-        if (start_row, start_col) in game.horizontal_walls:
-            return True
-        if (start_row, start_col - 1) in game.horizontal_walls:
-            return True
+        for wall in game.walls:
+            if wall.orientation == WallOrientation.HORIZONTAL:
+                if (
+                    wall.row == start_row and
+                    wall.col in (start_col, start_col - 1)
+                ):
+                    return True
 
     elif target_row < start_row:
-        if (target_row, target_col) in game.horizontal_walls:
-            return True
-        if (target_row, target_col - 1) in game.horizontal_walls:
-            return True
+        for wall in game.walls:
+            if wall.orientation == WallOrientation.HORIZONTAL:
+                if (
+                    wall.row == target_row and
+                    wall.col in (target_col, target_col - 1)
+                ):
+                    return True
 
     elif target_col > start_col:
-        if (start_row, start_col) in game.vertical_walls:
-            return True
-        if (start_row - 1, start_col) in game.vertical_walls:
-            return True
+        for wall in game.walls:
+            if wall.orientation == WallOrientation.VERTICAL:
+                if (
+                    wall.col == start_col and
+                    wall.row in (start_row, start_row - 1)
+                ):
+                    return True
 
     elif target_col < start_col:
-        if (target_row, target_col) in game.vertical_walls:
-            return True
-        if (target_row - 1, target_col) in game.vertical_walls:
-            return True
+        for wall in game.walls:
+            if wall.orientation == WallOrientation.VERTICAL:
+                if (
+                    wall.col == target_col and
+                    wall.row in (target_row, target_row - 1)
+                ):
+                    return True
 
     return False
 
@@ -248,6 +282,7 @@ def can_reach_goal(player):
                 continue
 
             if is_blocked(
+                game,
                 row,
                 col,
                 new_row,
@@ -288,37 +323,11 @@ def draw_valid_moves(player):
         pygame.draw.rect(screen, HIGHLIGHT_COLOR, highlight_rect)
 
 
-def draw_walls():
-    for row, col in game.horizontal_walls:
-        x, y = game.board.board_to_screen(row, col)
-
-        rect = pygame.Rect(
-            x,
-            y + CELL_SIZE,
-            CELL_SIZE * 2 + WALL_SIZE,
-            WALL_SIZE
-        )
-
-        pygame.draw.rect(screen, WALL_COLOR, rect)
-
-    for row, col in game.vertical_walls:
-        x, y = game.board.board_to_screen(row, col)
-
-        rect = pygame.Rect(
-            x + CELL_SIZE,
-            y,
-            WALL_SIZE,
-            CELL_SIZE * 2 + WALL_SIZE
-        )
-
-        pygame.draw.rect(screen, WALL_COLOR, rect)
-
-
 def draw_winner():
     if not game.game_over:
         return
 
-    if winner == game.player1:
+    if game.winner == game.player1:
         text = "Blue Player Wins!"
     else:
         text = "Red Player Wins!"
@@ -376,11 +385,11 @@ while running:
                     if current_player == game.player1:
                         if current_player.row == BOARD_SIZE - 1:
                             game.game_over = True
-                            winner = game.player1
+                            game.winner = game.player1
                     elif current_player == game.player2:
                         if current_player.row == 0:
                             game.game_over = True
-                            winner = game.player2
+                            game.winner = game.player2
 
                     game.switch_turn()
 
@@ -391,30 +400,25 @@ while running:
                     result = get_wall_position(mouse_x, mouse_y)
 
                     if result:
-                        direction, row, col = result
+                        orientation, row, col = result
 
-                        if is_valid_wall(direction, row, col):
-                            if direction == "H":
-                                game.horizontal_walls.add((row, col))
-                            else:
-                                game.vertical_walls.add((row, col))
+                        if is_valid_wall(game, orientation, row, col):
+                            new_wall = Wall(row, col, orientation)
+                            game.walls.append(new_wall)
 
                             if paths_exist():
                                 current_player.walls_remaining -= 1
                                 game.switch_turn()
                             else:
-                                if direction == "H":
-                                    game.horizontal_walls.remove((row, col))
-                                else:
-                                    game.vertical_walls.remove((row, col))
+                                game.walls.remove(new_wall)
 
     screen.fill(BACKGROUND_COLOR)
 
     game.board.draw(screen, game.board)
-    draw_walls()
     draw_valid_moves(game.current_player())
     draw_winner()
-
+    for wall in game.walls:
+        wall.draw(screen, game.board)
     for player in game.players:
         player.draw(screen, game.board)
 
