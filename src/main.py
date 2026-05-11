@@ -1,3 +1,4 @@
+from collections import deque
 import pygame
 import sys
 
@@ -55,6 +56,7 @@ class Player:
         self.row = row
         self.col = col
         self.color = color
+        self.walls_remaining = 10
 
 
 player1 = Player(0, 4, BLUE)
@@ -109,23 +111,41 @@ def get_valid_moves(player):
 
     valid_moves = []
 
-    for dr, dc in directions:
-        new_row = player.row + dr
-        new_col = player.col + dc
+    for row_offset, col_offset in directions:
+        target_row = player.row + row_offset
+        target_col = player.col + col_offset
 
-        if (
-            0 <= new_row < BOARD_SIZE and
-            0 <= new_col < BOARD_SIZE
+        if not (
+            0 <= target_row < BOARD_SIZE and
+            0 <= target_col < BOARD_SIZE
         ):
-            occupied = False
+            continue
 
-            for other in players:
-                if other != player:
-                    if other.row == new_row and other.col == new_col:
-                        occupied = True
+        if is_blocked(
+            player.row,
+            player.col,
+            target_row,
+            target_col
+        ):
+            continue
 
-            if not occupied:
-                valid_moves.append((new_row, new_col))
+        occupied = False
+
+        for other_player in players:
+            if other_player == player:
+                continue
+
+            if (
+                other_player.row == target_row and
+                other_player.col == target_col
+            ):
+                occupied = True
+                break
+
+        if occupied:
+            continue
+
+        valid_moves.append((target_row, target_col))
 
     return valid_moves
 
@@ -136,7 +156,6 @@ def get_wall_position(mouse_x, mouse_y):
 
             x, y = board_to_screen(row, col)
 
-            # horizontal wall area
             h_rect = pygame.Rect(
                 x,
                 y + CELL_SIZE,
@@ -144,7 +163,6 @@ def get_wall_position(mouse_x, mouse_y):
                 WALL_SIZE
             )
 
-            # vertical wall area
             v_rect = pygame.Rect(
                 x + CELL_SIZE,
                 y,
@@ -154,11 +172,120 @@ def get_wall_position(mouse_x, mouse_y):
 
             if h_rect.collidepoint(mouse_x, mouse_y):
                 return ("H", row, col)
-
             if v_rect.collidepoint(mouse_x, mouse_y):
                 return ("V", row, col)
 
     return None
+
+
+def is_valid_wall(direction, row, col):
+    if direction == "H":
+        if (row, col) in horizontal_walls:
+            return False
+        if (row, col - 1) in horizontal_walls:
+            return False
+        if (row, col + 1) in horizontal_walls:
+            return False
+        if (row, col) in vertical_walls:
+            return False
+
+    elif direction == "V":
+        if (row, col) in vertical_walls:
+            return False
+        if (row - 1, col) in vertical_walls:
+            return False
+        if (row + 1, col) in vertical_walls:
+            return False
+        if (row, col) in horizontal_walls:
+            return False
+
+    return True
+
+
+def is_blocked(start_row, start_col, target_row, target_col):
+    if target_row > start_row:
+        if (start_row, start_col) in horizontal_walls:
+            return True
+        if (start_row, start_col - 1) in horizontal_walls:
+            return True
+
+    elif target_row < start_row:
+        if (target_row, target_col) in horizontal_walls:
+            return True
+        if (target_row, target_col - 1) in horizontal_walls:
+            return True
+
+    elif target_col > start_col:
+        if (start_row, start_col) in vertical_walls:
+            return True
+        if (start_row - 1, start_col) in vertical_walls:
+            return True
+
+    elif target_col < start_col:
+        if (target_row, target_col) in vertical_walls:
+            return True
+        if (target_row - 1, target_col) in vertical_walls:
+            return True
+
+    return False
+
+
+def can_reach_goal(player):
+    visited = set()
+
+    queue = deque()
+    queue.append((player.row, player.col))
+
+    visited.add((player.row, player.col))
+
+    directions = [
+        (-1, 0),
+        (1, 0),
+        (0, -1),
+        (0, 1)
+    ]
+
+    while queue:
+        row, col = queue.popleft()
+
+        if player == player1 and row == 8:
+            return True
+        if player == player2 and row == 0:
+            return True
+
+        for dr, dc in directions:
+            new_row = row + dr
+            new_col = col + dc
+
+            if not (
+                0 <= new_row < BOARD_SIZE and
+                0 <= new_col < BOARD_SIZE
+            ):
+                continue
+
+            if (new_row, new_col) in visited:
+                continue
+
+            if is_blocked(
+                row,
+                col,
+                new_row,
+                new_col
+            ):
+                continue
+
+            visited.add((new_row, new_col))
+
+            queue.append((new_row, new_col))
+
+    return False
+
+
+def paths_exist():
+    return (
+        can_reach_goal(player1) and
+        can_reach_goal(player2)
+    )
 
 # =====================================
 # DRAWING
@@ -269,14 +396,28 @@ while running:
                     current_player_index = (current_player_index + 1) % 2
 
             if wall_mode:
-                result = get_wall_position(mouse_x, mouse_y)
-                if result:
-                    direction, row, col = result
+                current_player = players[current_player_index]
 
-                    if direction == "H":
-                        horizontal_walls.add((row, col))
-                    elif direction == "V":
-                        vertical_walls.add((row, col))
+                if current_player.walls_remaining > 0:
+                    result = get_wall_position(mouse_x, mouse_y)
+
+                    if result:
+                        direction, row, col = result
+
+                        if is_valid_wall(direction, row, col):
+                            if direction == "H":
+                                horizontal_walls.add((row, col))
+                            else:
+                                vertical_walls.add((row, col))
+
+                            if paths_exist():
+                                current_player.walls_remaining -= 1
+                                current_player_index = (current_player_index + 1) % 2
+                            else:
+                                if direction == "H":
+                                    horizontal_walls.remove((row, col))
+                                else:
+                                    vertical_walls.remove((row, col))
 
     screen.fill(BACKGROUND_COLOR)
 
