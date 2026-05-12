@@ -2,7 +2,7 @@
 
 A digital implementation of the board game **Quoridor**, built with Python and Pygame.
 
-<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/1cefcc94-5e0f-43c5-b362-1b9972d4af1a" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/d8e81b58-f2c5-44e1-8f27-0f4ce976596b" />
 
 ## 🎮 Gameplay Overview
 
