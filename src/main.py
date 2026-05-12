@@ -48,6 +48,10 @@ def get_wall_position(mouse_x, mouse_y):
 # DRAWING
 # =====================================
 
+font = pygame.font.SysFont(None, 48)
+ui_font = pygame.font.SysFont(None, 32)
+ui_small_font = pygame.font.SysFont(None, 24)
+
 def draw_valid_moves(player: Player):
     valid_moves = game.get_valid_moves(player)
 
@@ -137,12 +141,86 @@ def draw_wall_preview():
         (rect.x, rect.y)
     )
 
+
+def draw_player_panel(x, y, width, height, title, player, is_active):
+    rect = pygame.Rect(x, y, width, height)
+
+    pygame.draw.rect(
+        screen,
+        UI_PANEL_COLOR,
+        rect,
+        border_radius=10
+    )
+
+    padding_x = x + 8
+    padding_y = y + 8
+
+    title_surface = ui_font.render(
+        title,
+        True,
+        player.color
+    )
+
+    walls_surface = ui_small_font.render(
+        f"Walls: {player.walls_remaining}",
+        True,
+        UI_TEXT_COLOR
+    )
+
+    screen.blit(title_surface, (padding_x, padding_y))
+    screen.blit(walls_surface, (padding_x, padding_y + 30))
+
+    if is_active:
+        turn_surface = ui_small_font.render(
+            "YOUR TURN",
+            True,
+            (120, 220, 120)
+        )
+
+        screen.blit(turn_surface, (padding_x + 100, padding_y + 30))
+
+
+def draw_ui():
+    panel_width = 220
+    panel_height = 64
+    margin = 8
+
+    draw_player_panel(
+        margin,
+        margin,
+        panel_width,
+        panel_height,
+        "Blue Player",
+        game.player1,
+        game.current_player() == game.player1
+    )
+
+    draw_player_panel(
+        WINDOW_WIDTH - panel_width - margin,
+        WINDOW_HEIGHT - panel_height - margin,
+        panel_width,
+        panel_height,
+        "Red Player",
+        game.player2,
+        game.current_player() == game.player2
+    )
+
+    controls_surface = ui_small_font.render(
+        "[R] Restart",
+        True,
+        (180, 180, 180)
+    )
+
+    screen.blit(
+        controls_surface,
+        (margin, WINDOW_HEIGHT - 35)
+    )
+
 # =====================================
 # MAIN LOOP
 # =====================================
 
 running = True
-font = pygame.font.SysFont(None, 48)
 
 while running:
     clock.tick(FPS)
@@ -205,11 +283,12 @@ while running:
     game.board.draw(screen, game.board)
     draw_valid_moves(game.current_player())
     draw_wall_preview()
-    draw_winner()
     for wall in game.walls:
         wall.draw(screen, game.board)
     for player in game.players:
         player.draw(screen, game.board)
+    draw_ui()
+    draw_winner()
 
     pygame.display.flip()
 
