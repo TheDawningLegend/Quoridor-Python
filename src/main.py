@@ -196,25 +196,19 @@ def draw_ui():
     panel_height = 64
     margin = 8
 
-    draw_player_panel(
-        margin,
-        margin,
-        panel_width,
-        panel_height,
-        "Blue Player",
-        game.players[0],
-        game.current_player() == game.players[0]
-    )
+    for i, player in enumerate(game.players):
+        is_active = (player == game.current_player())
 
-    draw_player_panel(
-        WINDOW_WIDTH - panel_width - margin,
-        WINDOW_HEIGHT - panel_height - margin,
-        panel_width,
-        panel_height,
-        "Red Player",
-        game.players[1],
-        game.current_player() == game.players[1]
-    )
+        x = margin if i % 2 == 0 else WINDOW_WIDTH - panel_width - margin
+        y = margin if i < 2 else WINDOW_HEIGHT - panel_height - margin
+
+        draw_player_panel(
+            x, y,
+            panel_width, panel_height,
+            f"Player {i + 1}",
+            player,
+            is_active
+        )
 
     controls_surface = ui_small_font.render(
         "[R] Restart",
@@ -222,10 +216,11 @@ def draw_ui():
         (180, 180, 180)
     )
 
-    screen.blit(
-        controls_surface,
-        (margin, WINDOW_HEIGHT - 35)
+    controls_rect = controls_surface.get_rect(
+        center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT - 35)
     )
+
+    screen.blit(controls_surface, controls_rect)
 
 # =====================================
 # MAIN LOOP
