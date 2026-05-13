@@ -2,16 +2,25 @@ import pygame
 import sys
 
 from game import Game
+from game_state import GameState
 from player import Player
 from wall import Wall, WallOrientation
 from settings import *
+from ui.main_menu import MainMenu
 
-game = Game()
 
 pygame.init()
 pygame.display.set_caption("Quoridor")
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 clock = pygame.time.Clock()
+
+menu = MainMenu(
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT
+)
+game = Game()
+
+current_state = GameState.MAIN_MENU
 
 # =====================================
 # HELPERS
@@ -229,66 +238,80 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_r:
-                game.reset()
+        if current_state == GameState.MAIN_MENU:
+            result = menu.handle_event(event)
 
-        if (
-            event.type == pygame.MOUSEBUTTONDOWN and
-            not game.game_over
-        ):
-            mouse_x, mouse_y = pygame.mouse.get_pos()
+            if result:
+                player_count = result["player_count"]
 
-            clicked_cell = game.board.screen_to_board(mouse_x, mouse_y)
+                print(player_count)
 
-            if clicked_cell:
-                current_player = game.current_player()
-                valid_moves = game.get_valid_moves(current_player)
+                current_state = GameState.PLAYING
 
-                if clicked_cell in valid_moves:
-                    current_player.row = clicked_cell[0]
-                    current_player.col = clicked_cell[1]
+        elif current_state == GameState.PLAYING:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    game.reset()
 
-                    if current_player == game.player1:
-                        if current_player.row == BOARD_SIZE - 1:
-                            game.game_over = True
-                            game.winner = game.player1
-                    elif current_player == game.player2:
-                        if current_player.row == 0:
-                            game.game_over = True
-                            game.winner = game.player2
+            if (
+                event.type == pygame.MOUSEBUTTONDOWN and
+                not game.game_over
+            ):
+                mouse_x, mouse_y = pygame.mouse.get_pos()
 
-                    game.switch_turn()
+                clicked_cell = game.board.screen_to_board(mouse_x, mouse_y)
 
-            current_player = game.current_player()
+                if clicked_cell:
+                    current_player = game.current_player()
+                    valid_moves = game.get_valid_moves(current_player)
 
-            if current_player.walls_remaining > 0:
-                result = get_wall_position(mouse_x, mouse_y)
+                    if clicked_cell in valid_moves:
+                        current_player.row = clicked_cell[0]
+                        current_player.col = clicked_cell[1]
 
-                if result:
-                    orientation, row, col = result
+                        if current_player == game.player1:
+                            if current_player.row == BOARD_SIZE - 1:
+                                game.game_over = True
+                                game.winner = game.player1
+                        elif current_player == game.player2:
+                            if current_player.row == 0:
+                                game.game_over = True
+                                game.winner = game.player2
 
-                    if game.is_valid_wall(orientation, row, col):
-                        new_wall = Wall(row, col, orientation)
-
-                        game.walls.append(new_wall)
-                        for edge in new_wall.get_blocked_edges():
-                            game.block_edge(edge[0], edge[1])
-
-                        current_player.walls_remaining -= 1
                         game.switch_turn()
 
-    screen.fill(BACKGROUND_COLOR)
+                current_player = game.current_player()
 
-    game.board.draw(screen, game.board)
-    draw_valid_moves(game.current_player())
-    draw_wall_preview()
-    for wall in game.walls:
-        wall.draw(screen, game.board)
-    for player in game.players:
-        player.draw(screen, game.board)
-    draw_ui()
-    draw_winner()
+                if current_player.walls_remaining > 0:
+                    result = get_wall_position(mouse_x, mouse_y)
+
+                    if result:
+                        orientation, row, col = result
+
+                        if game.is_valid_wall(orientation, row, col):
+                            new_wall = Wall(row, col, orientation)
+
+                            game.walls.append(new_wall)
+                            for edge in new_wall.get_blocked_edges():
+                                game.block_edge(edge[0], edge[1])
+
+                            current_player.walls_remaining -= 1
+                            game.switch_turn()
+
+    if current_state == GameState.MAIN_MENU:
+        menu.draw(screen)
+    elif current_state == GameState.PLAYING:
+        screen.fill(BACKGROUND_COLOR)
+
+        game.board.draw(screen, game.board)
+        draw_valid_moves(game.current_player())
+        draw_wall_preview()
+        for wall in game.walls:
+            wall.draw(screen, game.board)
+        for player in game.players:
+            player.draw(screen, game.board)
+        draw_ui()
+        draw_winner()
 
     pygame.display.flip()
 
