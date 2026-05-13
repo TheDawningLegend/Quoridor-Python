@@ -1,9 +1,20 @@
 from collections import deque
+from enum import Enum
+
 from entities.board import Board
-from game_config import GameConfig
 from entities.player import Player
 from settings import *
 from entities.wall import WallOrientation, Wall
+
+
+class GameState(Enum):
+    MAIN_MENU = 0
+    PLAYING = 1
+
+
+class GameConfig:
+    def __init__(self, player_count=2):
+        self.player_count = player_count
 
 
 class Game:

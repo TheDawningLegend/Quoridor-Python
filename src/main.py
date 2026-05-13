@@ -1,8 +1,7 @@
 import pygame
 import sys
 
-from game import Game
-from game_state import GameState
+from game import Game, GameState
 from entities.player import Player
 from entities.wall import WallOrientation
 from settings import *
