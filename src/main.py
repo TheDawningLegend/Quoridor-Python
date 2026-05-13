@@ -82,10 +82,7 @@ def draw_winner():
     if not game.game_over:
         return
 
-    if game.winner == game.player1:
-        text = "Blue Player Wins!"
-    else:
-        text = "Red Player Wins!"
+    text = f"{game.winner.name} Wins!"
 
     surface = font.render(
         text + "  (Press R to Restart)",
