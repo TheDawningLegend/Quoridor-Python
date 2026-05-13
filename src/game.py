@@ -1,22 +1,20 @@
 from collections import deque
-from board import Board
-from player import Player
+from entities.board import Board
+from game_config import GameConfig
+from entities.player import Player
 from settings import *
-from wall import WallOrientation, Wall
+from entities.wall import WallOrientation, Wall
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, config: GameConfig):
+        self.config = config
         self.reset()
 
     def reset(self):
         self.board = Board()
 
-        self.player1 = Player(0, 4, BLUE)
-        self.player2 = Player(8, 4, RED)
-
-        self.players = [self.player1, self.player2]
-
+        self.init_players()
         self.current_player_index = 0
 
         self.walls = []
@@ -25,11 +23,25 @@ class Game:
         self.game_over = False
         self.winner = None
 
+    def init_players(self):
+        if self.config.player_count == 2:
+            self.players = [
+                Player(4, 0, (0, 120, 255), goal_rows=[8]),
+                Player(4, 8, (255, 80, 80), goal_rows=[0]),
+            ]
+        elif self.config.player_count == 4:
+            self.players = [
+                Player(4, 0, (0, 120, 255), goal_rows=[8]),
+                Player(4, 8, (255, 80, 80), goal_rows=[0]),
+                Player(0, 4, (80, 200, 80), goal_rows=[8]),
+                Player(8, 4, (200, 180, 60), goal_rows=[0]),
+            ]
+
     def current_player(self):
         return self.players[self.current_player_index]
 
     def switch_turn(self):
-        self.current_player_index = 1 - self.current_player_index
+        self.current_player_index = (self.current_player_index + 1) % len(self.players)
 
     def get_neighbors(self, row, col):
         neighbors = []
@@ -158,9 +170,9 @@ class Game:
         while queue:
             row, col = queue.popleft()
 
-            if player == self.player1 and row == BOARD_SIZE - 1:
+            if player == self.players[0] and row == BOARD_SIZE - 1:
                 return True
-            if player == self.player2 and row == 0:
+            if player == self.players[1] and row == 0:
                 return True
 
             for neighbor in self.get_neighbors(row, col):

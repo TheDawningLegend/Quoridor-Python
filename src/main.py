@@ -3,8 +3,8 @@ import sys
 
 from game import Game
 from game_state import GameState
-from player import Player
-from wall import Wall, WallOrientation
+from entities.player import Player
+from entities.wall import Wall, WallOrientation
 from settings import *
 from ui.main_menu import MainMenu
 
@@ -18,7 +18,9 @@ menu = MainMenu(
     WINDOW_WIDTH,
     WINDOW_HEIGHT
 )
-game = Game()
+
+game = None
+config = None
 
 current_state = GameState.MAIN_MENU
 
@@ -200,8 +202,8 @@ def draw_ui():
         panel_width,
         panel_height,
         "Blue Player",
-        game.player1,
-        game.current_player() == game.player1
+        game.players[0],
+        game.current_player() == game.players[0]
     )
 
     draw_player_panel(
@@ -210,8 +212,8 @@ def draw_ui():
         panel_width,
         panel_height,
         "Red Player",
-        game.player2,
-        game.current_player() == game.player2
+        game.players[1],
+        game.current_player() == game.players[1]
     )
 
     controls_surface = ui_small_font.render(
@@ -239,13 +241,10 @@ while running:
             running = False
 
         if current_state == GameState.MAIN_MENU:
-            result = menu.handle_event(event)
+            config = menu.handle_event(event)
 
-            if result:
-                player_count = result["player_count"]
-
-                print(player_count)
-
+            if config:
+                game = Game(config)
                 current_state = GameState.PLAYING
 
         elif current_state == GameState.PLAYING:
@@ -269,14 +268,14 @@ while running:
                         current_player.row = clicked_cell[0]
                         current_player.col = clicked_cell[1]
 
-                        if current_player == game.player1:
+                        if current_player == game.players[0]:
                             if current_player.row == BOARD_SIZE - 1:
                                 game.game_over = True
-                                game.winner = game.player1
-                        elif current_player == game.player2:
+                                game.winner = game.players[0]
+                        elif current_player == game.players[1]:
                             if current_player.row == 0:
                                 game.game_over = True
-                                game.winner = game.player2
+                                game.winner = game.players[1]
 
                         game.switch_turn()
 
