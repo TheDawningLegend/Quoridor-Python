@@ -38,16 +38,16 @@ class Game:
         if self.config.player_count == 2:
             walls = 10
             self.players = [
-                Player(0, 4, BLUE, name="Blue", goal_rows=[8], walls=walls),
-                Player(8, 4, RED, name="Red", goal_rows=[0], walls=walls),
+                Player(0, 4, BLUE, name="Blue", goal_rows=[8], walls=walls, is_ai=False),
+                Player(8, 4, RED, name="Red", goal_rows=[0], walls=walls, is_ai=True),
             ]
         elif self.config.player_count == 4:
             walls = 5
             self.players = [
-                Player(0, 4, BLUE, name="Blue", goal_rows=[8], walls=walls),
-                Player(8, 4, RED, name="Red", goal_rows=[0], walls=walls),
-                Player(4, 0, GREEN, name="Green", goal_columns=[8], walls=walls),
-                Player(4, 8, YELLOW, name="Yellow", goal_columns=[0], walls=walls),
+                Player(0, 4, BLUE, name="Blue", goal_rows=[8], walls=walls, is_ai=False),
+                Player(8, 4, RED, name="Red", goal_rows=[0], walls=walls, is_ai=True),
+                Player(4, 0, GREEN, name="Green", goal_columns=[8], walls=walls, is_ai=True),
+                Player(4, 8, YELLOW, name="Yellow", goal_columns=[0], walls=walls, is_ai=True),
             ]
 
     def current_player(self):
@@ -278,3 +278,41 @@ class Game:
 
         player.walls_remaining -= 1
         self.switch_turn()
+
+    def estimate_distance_to_goal(self, player, pos):
+        queue = deque([(pos[0], pos[1], 0)])
+        visited = set()
+
+        while queue:
+            r, c, dist = queue.popleft()
+
+            if r in player.goal_rows:
+                return dist
+
+            if (r, c) in visited:
+                continue
+
+            visited.add((r, c))
+
+            for nr, nc in self.get_neighbors(r, c):
+                if self.is_edge_blocked((r, c), (nr, nc)):
+                    continue
+
+                queue.append((nr, nc, dist + 1))
+
+        return 9999
+
+    def ai_choose_move(self, player):
+        valid_moves = self.get_valid_moves(player)
+
+        best_move = None
+        best_distance = float("inf")
+
+        for move in valid_moves:
+            distance = self.estimate_distance_to_goal(player, move)
+
+            if distance < best_distance:
+                best_distance = distance
+                best_move = move
+
+        return best_move

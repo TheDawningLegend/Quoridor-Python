@@ -239,6 +239,13 @@ while running:
                 current_state = GameState.PLAYING
 
         elif current_state == GameState.PLAYING:
+            current_player = game.current_player()
+
+            if current_player.is_ai and not game.game_over:
+                move = game.ai_choose_move(current_player)
+                if move:
+                    game.move_player(current_player, move)
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     game.reset()
@@ -248,8 +255,6 @@ while running:
                 not game.game_over
             ):
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-
-                current_player = game.current_player()
 
                 clicked_cell = game.board.screen_to_board(mouse_x, mouse_y)
                 if clicked_cell:
