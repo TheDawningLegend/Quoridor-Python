@@ -4,7 +4,7 @@ import sys
 from game import Game
 from game_state import GameState
 from entities.player import Player
-from entities.wall import Wall, WallOrientation
+from entities.wall import WallOrientation
 from settings import *
 from ui.main_menu import MainMenu
 
@@ -258,44 +258,16 @@ while running:
             ):
                 mouse_x, mouse_y = pygame.mouse.get_pos()
 
-                clicked_cell = game.board.screen_to_board(mouse_x, mouse_y)
-
-                if clicked_cell:
-                    current_player = game.current_player()
-                    valid_moves = game.get_valid_moves(current_player)
-
-                    if clicked_cell in valid_moves:
-                        current_player.row = clicked_cell[0]
-                        current_player.col = clicked_cell[1]
-
-                        if current_player == game.players[0]:
-                            if current_player.row == BOARD_SIZE - 1:
-                                game.game_over = True
-                                game.winner = game.players[0]
-                        elif current_player == game.players[1]:
-                            if current_player.row == 0:
-                                game.game_over = True
-                                game.winner = game.players[1]
-
-                        game.switch_turn()
-
                 current_player = game.current_player()
 
-                if current_player.walls_remaining > 0:
-                    result = get_wall_position(mouse_x, mouse_y)
+                clicked_cell = game.board.screen_to_board(mouse_x, mouse_y)
+                if clicked_cell:
+                    game.move_player(current_player, clicked_cell)
 
-                    if result:
-                        orientation, row, col = result
-
-                        if game.is_valid_wall(orientation, row, col):
-                            new_wall = Wall(row, col, orientation)
-
-                            game.walls.append(new_wall)
-                            for edge in new_wall.get_blocked_edges():
-                                game.block_edge(edge[0], edge[1])
-
-                            current_player.walls_remaining -= 1
-                            game.switch_turn()
+                clicked_wall = get_wall_position(mouse_x, mouse_y)
+                if clicked_wall:
+                    orientation, row, col = clicked_wall
+                    game.place_wall(current_player, orientation, row, col)
 
     if current_state == GameState.MAIN_MENU:
         menu.draw(screen)

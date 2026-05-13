@@ -26,15 +26,15 @@ class Game:
     def init_players(self):
         if self.config.player_count == 2:
             self.players = [
-                Player(4, 0, (0, 120, 255), goal_rows=[8]),
-                Player(4, 8, (255, 80, 80), goal_rows=[0]),
+                Player(0, 4, BLUE, goal_rows=[8]),
+                Player(8, 4, RED, goal_rows=[0]),
             ]
         elif self.config.player_count == 4:
             self.players = [
-                Player(4, 0, (0, 120, 255), goal_rows=[8]),
-                Player(4, 8, (255, 80, 80), goal_rows=[0]),
-                Player(0, 4, (80, 200, 80), goal_rows=[8]),
-                Player(8, 4, (200, 180, 60), goal_rows=[0]),
+                Player(0, 4, BLUE, goal_rows=[8]),
+                Player(8, 4, RED, goal_rows=[0]),
+                Player(4, 0, GREEN, goal_columns=[8]),
+                Player(4, 8, YELLOW, goal_columns=[0]),
             ]
 
     def current_player(self):
@@ -258,3 +258,34 @@ class Game:
     def is_edge_blocked(self, cell1, cell2):
         edge = frozenset([cell1, cell2])
         return edge in self.blocked_edges
+
+    def move_player(self, player: Player, cell):
+        valid_moves = self.get_valid_moves(player)
+
+        if cell not in valid_moves:
+            return
+
+        player.row = cell[0]
+        player.col = cell[1]
+
+        if player.check_win():
+            self.game_over = True
+            self.winner = player
+        else:
+            self.switch_turn()
+
+    def place_wall(self, player: Player, orientation, row, col):
+        if not player.walls_remaining > 0:
+            return
+
+        if not self.is_valid_wall(orientation, row, col):
+            return
+
+        new_wall = Wall(row, col, orientation)
+
+        self.walls.append(new_wall)
+        for edge in new_wall.get_blocked_edges():
+            self.block_edge(edge[0], edge[1])
+
+        player.walls_remaining -= 1
+        self.switch_turn()
