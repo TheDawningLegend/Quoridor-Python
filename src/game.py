@@ -86,32 +86,23 @@ class Game:
 
         return neighbors
 
-    def get_opponent(self, player: Player):
-        for p in self.players:
-            if p is not player:
-                return p
-
-        return None
-
     def get_valid_moves(self, player: Player):
         valid_moves = []
-
-        opponent = self.get_opponent(player)
 
         neighbors = self.get_neighbors(
             player.row,
             player.col
         )
 
-        for neighbor_row, neighbor_col in neighbors:
-            if (
-                neighbor_row != opponent.row or
-                neighbor_col != opponent.col
-            ):
-                valid_moves.append(
-                    (neighbor_row, neighbor_col)
-                )
+        occupied = {
+            (p.row, p.col): p
+            for p in self.players
+            if p != player
+        }
 
+        for neighbor_row, neighbor_col in neighbors:
+            if (neighbor_row, neighbor_col) not in occupied:
+                valid_moves.append((neighbor_row, neighbor_col))
                 continue
 
             row_direction = neighbor_row - player.row
@@ -123,53 +114,40 @@ class Game:
             if (
                 0 <= jump_row < BOARD_SIZE and
                 0 <= jump_col < BOARD_SIZE and
+                (jump_row, jump_col) not in occupied and
                 not self.is_edge_blocked(
                     (neighbor_row, neighbor_col),
                     (jump_row, jump_col)
                 )
             ):
-                valid_moves.append(
-                    (jump_row, jump_col)
-                )
+                valid_moves.append((jump_row, jump_col))
+                continue
 
+            if row_direction != 0:
+                diagonal_directions = [(0, -1), (0, 1)]
             else:
-                if row_direction != 0:
-                    diagonal_directions = [
-                        (0, -1),
-                        (0, 1)
-                    ]
-                else:
-                    diagonal_directions = [
-                        (-1, 0),
-                        (1, 0)
-                    ]
+                diagonal_directions = [(-1, 0), (1, 0)]
 
-                for diagonal_row_direction, diagonal_col_direction in diagonal_directions:
-                    diagonal_row = (
-                        neighbor_row +
-                        diagonal_row_direction
-                    )
+            for dr, dc in diagonal_directions:
+                diag_row = neighbor_row + dr
+                diag_col = neighbor_col + dc
 
-                    diagonal_col = (
-                        neighbor_col +
-                        diagonal_col_direction
-                    )
+                if not (
+                    0 <= diag_row < BOARD_SIZE and
+                    0 <= diag_col < BOARD_SIZE
+                ):
+                    continue
 
-                    if not (
-                        0 <= diagonal_row < BOARD_SIZE and
-                        0 <= diagonal_col < BOARD_SIZE
-                    ):
-                        continue
+                if (diag_row, diag_col) in occupied:
+                    continue
 
-                    if self.is_edge_blocked(
-                        (neighbor_row, neighbor_col),
-                        (diagonal_row, diagonal_col)
-                    ):
-                        continue
+                if self.is_edge_blocked(
+                    (neighbor_row, neighbor_col),
+                    (diag_row, diag_col)
+                ):
+                    continue
 
-                    valid_moves.append(
-                        (diagonal_row, diagonal_col)
-                    )
+                valid_moves.append((diag_row, diag_col))
 
         return valid_moves
 
