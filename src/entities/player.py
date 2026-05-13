@@ -3,11 +3,11 @@ from settings import *
 from drawable import Drawable
 
 class Player(Drawable):
-    def __init__(self, row, col, color, goal_rows=None, goal_columns=None):
+    def __init__(self, row, col, color, goal_rows=None, goal_columns=None, walls=10):
         self.row = row
         self.col = col
         self.color = color
-        self.walls_remaining = 10
+        self.walls_remaining = walls
         self.goal_rows = goal_rows or []
         self.goal_columns = goal_columns or []
 

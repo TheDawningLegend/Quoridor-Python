@@ -25,16 +25,18 @@ class Game:
 
     def init_players(self):
         if self.config.player_count == 2:
+            walls = 10
             self.players = [
-                Player(0, 4, BLUE, goal_rows=[8]),
-                Player(8, 4, RED, goal_rows=[0]),
+                Player(0, 4, BLUE, goal_rows=[8], walls=walls),
+                Player(8, 4, RED, goal_rows=[0], walls=walls),
             ]
         elif self.config.player_count == 4:
+            walls = 5
             self.players = [
-                Player(0, 4, BLUE, goal_rows=[8]),
-                Player(8, 4, RED, goal_rows=[0]),
-                Player(4, 0, GREEN, goal_columns=[8]),
-                Player(4, 8, YELLOW, goal_columns=[0]),
+                Player(0, 4, BLUE, goal_rows=[8], walls=walls),
+                Player(8, 4, RED, goal_rows=[0], walls=walls),
+                Player(4, 0, GREEN, goal_columns=[8], walls=walls),
+                Player(4, 8, YELLOW, goal_columns=[0], walls=walls),
             ]
 
     def current_player(self):
