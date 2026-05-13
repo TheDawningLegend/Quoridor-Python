@@ -288,6 +288,8 @@ class Game:
 
             if r in player.goal_rows:
                 return dist
+            if c in player.goal_columns:
+                return dist
 
             if (r, c) in visited:
                 continue
@@ -302,17 +304,91 @@ class Game:
 
         return 9999
 
-    def ai_choose_move(self, player):
-        valid_moves = self.get_valid_moves(player)
+    def get_wall_candidates(self, player):
+        candidates = []
 
-        best_move = None
-        best_distance = float("inf")
+        row, col = player.row, player.col
 
-        for move in valid_moves:
-            distance = self.estimate_distance_to_goal(player, move)
+        for r in range(row - 1, row + 2):
+            for c in range(col - 1, col + 2):
+                if 0 <= r < BOARD_SIZE - 1 and 0 <= c < BOARD_SIZE - 1:
+                    candidates.append((r, c))
 
-            if distance < best_distance:
-                best_distance = distance
-                best_move = move
+        return candidates
 
-        return best_move
+    def evaluate_position(self, player):
+        my_dist = self.estimate_distance_to_goal(
+            player,
+            (player.row, player.col)
+        )
+
+        opponent_dists = [
+            self.estimate_distance_to_goal(
+                opp,
+                (opp.row, opp.col)
+            )
+            for opp in self.players
+            if opp != player
+        ]
+
+        closest_opponent = min(opponent_dists)
+
+        return closest_opponent - my_dist
+
+    def get_most_dangerous_opponent(self, player):
+        return min(
+            (opp for opp in self.players if opp != player),
+            key=lambda p: self.estimate_distance_to_goal(p, (p.row, p.col))
+        )
+
+    def simulate_wall(self, row, col, orientation):
+        wall = Wall(row, col, orientation)
+        edges = wall.get_blocked_edges()
+
+        for e in edges:
+            self.block_edge(e[0], e[1])
+
+        valid = self.paths_exist()
+
+        for e in edges:
+            self.unblock_edge(e[0], e[1])
+
+        return valid
+
+    def ai_choose_action(self, player):
+        best_score = float("-inf")
+        best_action = None
+
+        for move in self.get_valid_moves(player):
+            original = (player.row, player.col)
+
+            player.row, player.col = move
+
+            score = self.evaluate_position(player)
+
+            player.row, player.col = original
+
+            if score > best_score:
+                best_score = score
+                best_action = ("MOVE", move)
+
+        for r, c in self.get_wall_candidates(player):
+            for orientation in [WallOrientation.HORIZONTAL, WallOrientation.VERTICAL]:
+                if not self.simulate_wall(r, c, orientation):
+                    continue
+
+                edges = Wall(r, c, orientation).get_blocked_edges()
+
+                for e in edges:
+                    self.block_edge(e[0], e[1])
+
+                score = self.evaluate_position(player)
+
+                for e in edges:
+                    self.unblock_edge(e[0], e[1])
+
+                if score > best_score:
+                    best_score = score
+                    best_action = ("WALL", (r, c, orientation))
+
+        return best_action

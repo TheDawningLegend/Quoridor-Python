@@ -242,9 +242,17 @@ while running:
             current_player = game.current_player()
 
             if current_player.is_ai and not game.game_over:
-                move = game.ai_choose_move(current_player)
-                if move:
-                    game.move_player(current_player, move)
+                action = game.ai_choose_action(current_player)
+
+                if action:
+                    kind, data = action
+
+                    if kind == "MOVE":
+                        move = data
+                        game.move_player(current_player, move)
+                    elif kind == "WALL":
+                        row, col, orientation = data
+                        game.place_wall(current_player, row, col, orientation)
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
