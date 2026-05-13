@@ -268,7 +268,7 @@ while running:
     elif current_state == GameState.PLAYING:
         screen.fill(BACKGROUND_COLOR)
 
-        game.board.draw(screen, game.board)
+        game.board.draw(screen)
         draw_valid_moves(game.current_player())
         draw_wall_preview()
         for wall in game.walls:

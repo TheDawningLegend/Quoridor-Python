@@ -1,8 +1,7 @@
 import pygame
 from settings import *
-from drawable import Drawable
 
-class Player(Drawable):
+class Player:
     def __init__(self, row, col, color, goal_rows=None, goal_columns=None, walls=10):
         self.row = row
         self.col = col

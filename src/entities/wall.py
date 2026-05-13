@@ -1,7 +1,6 @@
 from enum import Enum
 import pygame
 from settings import *
-from drawable import Drawable
 
 
 class WallOrientation(Enum):
@@ -9,7 +8,7 @@ class WallOrientation(Enum):
     VERTICAL = 1
 
 
-class Wall(Drawable):
+class Wall:
     def __init__(self, row, col, orientation: WallOrientation):
         self.row = row
         self.col = col
