@@ -183,9 +183,7 @@ class Game:
         while queue:
             row, col = queue.popleft()
 
-            if player == self.players[0] and row == BOARD_SIZE - 1:
-                return True
-            if player == self.players[1] and row == 0:
+            if row in player.goal_rows or col in player.goal_columns:
                 return True
 
             for neighbor in self.get_neighbors(row, col):
