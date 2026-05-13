@@ -1,22 +1,31 @@
 from collections import deque
-from board import Board
-from player import Player
+from enum import Enum
+
+from entities.board import Board
+from entities.player import Player
 from settings import *
-from wall import WallOrientation, Wall
+from entities.wall import WallOrientation, Wall
+
+
+class GameState(Enum):
+    MAIN_MENU = 0
+    PLAYING = 1
+
+
+class GameConfig:
+    def __init__(self, player_count=2):
+        self.player_count = player_count
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, config: GameConfig):
+        self.config = config
         self.reset()
 
     def reset(self):
         self.board = Board()
 
-        self.player1 = Player(0, 4, BLUE)
-        self.player2 = Player(8, 4, RED)
-
-        self.players = [self.player1, self.player2]
-
+        self.init_players()
         self.current_player_index = 0
 
         self.walls = []
@@ -25,11 +34,27 @@ class Game:
         self.game_over = False
         self.winner = None
 
+    def init_players(self):
+        if self.config.player_count == 2:
+            walls = 10
+            self.players = [
+                Player(0, 4, BLUE, name="Blue", goal_rows=[8], walls=walls),
+                Player(8, 4, RED, name="Red", goal_rows=[0], walls=walls),
+            ]
+        elif self.config.player_count == 4:
+            walls = 5
+            self.players = [
+                Player(0, 4, BLUE, name="Blue", goal_rows=[8], walls=walls),
+                Player(8, 4, RED, name="Red", goal_rows=[0], walls=walls),
+                Player(4, 0, GREEN, name="Green", goal_columns=[8], walls=walls),
+                Player(4, 8, YELLOW, name="Yellow", goal_columns=[0], walls=walls),
+            ]
+
     def current_player(self):
         return self.players[self.current_player_index]
 
     def switch_turn(self):
-        self.current_player_index = 1 - self.current_player_index
+        self.current_player_index = (self.current_player_index + 1) % len(self.players)
 
     def get_neighbors(self, row, col):
         neighbors = []
@@ -61,32 +86,23 @@ class Game:
 
         return neighbors
 
-    def get_opponent(self, player: Player):
-        for p in self.players:
-            if p is not player:
-                return p
-
-        return None
-
     def get_valid_moves(self, player: Player):
         valid_moves = []
-
-        opponent = self.get_opponent(player)
 
         neighbors = self.get_neighbors(
             player.row,
             player.col
         )
 
-        for neighbor_row, neighbor_col in neighbors:
-            if (
-                neighbor_row != opponent.row or
-                neighbor_col != opponent.col
-            ):
-                valid_moves.append(
-                    (neighbor_row, neighbor_col)
-                )
+        occupied = {
+            (p.row, p.col): p
+            for p in self.players
+            if p != player
+        }
 
+        for neighbor_row, neighbor_col in neighbors:
+            if (neighbor_row, neighbor_col) not in occupied:
+                valid_moves.append((neighbor_row, neighbor_col))
                 continue
 
             row_direction = neighbor_row - player.row
@@ -98,53 +114,40 @@ class Game:
             if (
                 0 <= jump_row < BOARD_SIZE and
                 0 <= jump_col < BOARD_SIZE and
+                (jump_row, jump_col) not in occupied and
                 not self.is_edge_blocked(
                     (neighbor_row, neighbor_col),
                     (jump_row, jump_col)
                 )
             ):
-                valid_moves.append(
-                    (jump_row, jump_col)
-                )
+                valid_moves.append((jump_row, jump_col))
+                continue
 
+            if row_direction != 0:
+                diagonal_directions = [(0, -1), (0, 1)]
             else:
-                if row_direction != 0:
-                    diagonal_directions = [
-                        (0, -1),
-                        (0, 1)
-                    ]
-                else:
-                    diagonal_directions = [
-                        (-1, 0),
-                        (1, 0)
-                    ]
+                diagonal_directions = [(-1, 0), (1, 0)]
 
-                for diagonal_row_direction, diagonal_col_direction in diagonal_directions:
-                    diagonal_row = (
-                        neighbor_row +
-                        diagonal_row_direction
-                    )
+            for dr, dc in diagonal_directions:
+                diag_row = neighbor_row + dr
+                diag_col = neighbor_col + dc
 
-                    diagonal_col = (
-                        neighbor_col +
-                        diagonal_col_direction
-                    )
+                if not (
+                    0 <= diag_row < BOARD_SIZE and
+                    0 <= diag_col < BOARD_SIZE
+                ):
+                    continue
 
-                    if not (
-                        0 <= diagonal_row < BOARD_SIZE and
-                        0 <= diagonal_col < BOARD_SIZE
-                    ):
-                        continue
+                if (diag_row, diag_col) in occupied:
+                    continue
 
-                    if self.is_edge_blocked(
-                        (neighbor_row, neighbor_col),
-                        (diagonal_row, diagonal_col)
-                    ):
-                        continue
+                if self.is_edge_blocked(
+                    (neighbor_row, neighbor_col),
+                    (diag_row, diag_col)
+                ):
+                    continue
 
-                    valid_moves.append(
-                        (diagonal_row, diagonal_col)
-                    )
+                valid_moves.append((diag_row, diag_col))
 
         return valid_moves
 
@@ -158,9 +161,7 @@ class Game:
         while queue:
             row, col = queue.popleft()
 
-            if player == self.player1 and row == BOARD_SIZE - 1:
-                return True
-            if player == self.player2 and row == 0:
+            if row in player.goal_rows or col in player.goal_columns:
                 return True
 
             for neighbor in self.get_neighbors(row, col):
@@ -246,3 +247,34 @@ class Game:
     def is_edge_blocked(self, cell1, cell2):
         edge = frozenset([cell1, cell2])
         return edge in self.blocked_edges
+
+    def move_player(self, player: Player, cell):
+        valid_moves = self.get_valid_moves(player)
+
+        if cell not in valid_moves:
+            return
+
+        player.row = cell[0]
+        player.col = cell[1]
+
+        if player.check_win():
+            self.game_over = True
+            self.winner = player
+        else:
+            self.switch_turn()
+
+    def place_wall(self, player: Player, orientation, row, col):
+        if not player.walls_remaining > 0:
+            return
+
+        if not self.is_valid_wall(orientation, row, col):
+            return
+
+        new_wall = Wall(row, col, orientation)
+
+        self.walls.append(new_wall)
+        for edge in new_wall.get_blocked_edges():
+            self.block_edge(edge[0], edge[1])
+
+        player.walls_remaining -= 1
+        self.switch_turn()

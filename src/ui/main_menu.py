@@ -1,5 +1,6 @@
 import pygame
 
+from game import GameConfig
 from ui.button import Button
 
 
@@ -68,13 +69,15 @@ class MainMenu:
 
     def handle_event(self, event):
         if self.two_player_button.clicked(event):
-            return {
-                "player_count": 2,
-            }
+            config = GameConfig(
+                player_count=2
+            )
+            return config
 
         if self.four_player_button.clicked(event):
-            return {
-                "player_count": 4,
-            }
-        
+            config = GameConfig(
+                player_count=4
+            )
+            return config
+
         return None

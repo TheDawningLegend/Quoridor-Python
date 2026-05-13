@@ -1,8 +1,7 @@
 import pygame
 from settings import *
-from drawable import Drawable
 
-class Board(Drawable):
+class Board:
     def board_to_screen(self, row, col):
         x = BOARD_OFFSET_X + col * (CELL_SIZE + WALL_SIZE)
         y = BOARD_OFFSET_Y + row * (CELL_SIZE + WALL_SIZE)
@@ -27,7 +26,7 @@ class Board(Drawable):
 
         return None
 
-    def draw(self, screen, board=None):
+    def draw(self, screen):
         for row in range(BOARD_SIZE):
             for col in range(BOARD_SIZE):
 

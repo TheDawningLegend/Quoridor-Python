@@ -1,10 +1,9 @@
 import pygame
 import sys
 
-from game import Game
-from game_state import GameState
-from player import Player
-from wall import Wall, WallOrientation
+from game import Game, GameState
+from entities.player import Player
+from entities.wall import WallOrientation
 from settings import *
 from ui.main_menu import MainMenu
 
@@ -18,7 +17,9 @@ menu = MainMenu(
     WINDOW_WIDTH,
     WINDOW_HEIGHT
 )
-game = Game()
+
+game = None
+config = None
 
 current_state = GameState.MAIN_MENU
 
@@ -81,10 +82,7 @@ def draw_winner():
     if not game.game_over:
         return
 
-    if game.winner == game.player1:
-        text = "Blue Player Wins!"
-    else:
-        text = "Red Player Wins!"
+    text = f"{game.winner.name} Wins!"
 
     surface = font.render(
         text + "  (Press R to Restart)",
@@ -194,25 +192,19 @@ def draw_ui():
     panel_height = 64
     margin = 8
 
-    draw_player_panel(
-        margin,
-        margin,
-        panel_width,
-        panel_height,
-        "Blue Player",
-        game.player1,
-        game.current_player() == game.player1
-    )
+    for i, player in enumerate(game.players):
+        is_active = (player == game.current_player())
 
-    draw_player_panel(
-        WINDOW_WIDTH - panel_width - margin,
-        WINDOW_HEIGHT - panel_height - margin,
-        panel_width,
-        panel_height,
-        "Red Player",
-        game.player2,
-        game.current_player() == game.player2
-    )
+        x = margin if i % 2 == 0 else WINDOW_WIDTH - panel_width - margin
+        y = margin if i < 2 else WINDOW_HEIGHT - panel_height - margin
+
+        draw_player_panel(
+            x, y,
+            panel_width, panel_height,
+            f"Player {i + 1}",
+            player,
+            is_active
+        )
 
     controls_surface = ui_small_font.render(
         "[R] Restart",
@@ -220,10 +212,11 @@ def draw_ui():
         (180, 180, 180)
     )
 
-    screen.blit(
-        controls_surface,
-        (margin, WINDOW_HEIGHT - 35)
+    controls_rect = controls_surface.get_rect(
+        center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT - 35)
     )
+
+    screen.blit(controls_surface, controls_rect)
 
 # =====================================
 # MAIN LOOP
@@ -239,13 +232,10 @@ while running:
             running = False
 
         if current_state == GameState.MAIN_MENU:
-            result = menu.handle_event(event)
+            config = menu.handle_event(event)
 
-            if result:
-                player_count = result["player_count"]
-
-                print(player_count)
-
+            if config:
+                game = Game(config)
                 current_state = GameState.PLAYING
 
         elif current_state == GameState.PLAYING:
@@ -259,51 +249,23 @@ while running:
             ):
                 mouse_x, mouse_y = pygame.mouse.get_pos()
 
-                clicked_cell = game.board.screen_to_board(mouse_x, mouse_y)
-
-                if clicked_cell:
-                    current_player = game.current_player()
-                    valid_moves = game.get_valid_moves(current_player)
-
-                    if clicked_cell in valid_moves:
-                        current_player.row = clicked_cell[0]
-                        current_player.col = clicked_cell[1]
-
-                        if current_player == game.player1:
-                            if current_player.row == BOARD_SIZE - 1:
-                                game.game_over = True
-                                game.winner = game.player1
-                        elif current_player == game.player2:
-                            if current_player.row == 0:
-                                game.game_over = True
-                                game.winner = game.player2
-
-                        game.switch_turn()
-
                 current_player = game.current_player()
 
-                if current_player.walls_remaining > 0:
-                    result = get_wall_position(mouse_x, mouse_y)
+                clicked_cell = game.board.screen_to_board(mouse_x, mouse_y)
+                if clicked_cell:
+                    game.move_player(current_player, clicked_cell)
 
-                    if result:
-                        orientation, row, col = result
-
-                        if game.is_valid_wall(orientation, row, col):
-                            new_wall = Wall(row, col, orientation)
-
-                            game.walls.append(new_wall)
-                            for edge in new_wall.get_blocked_edges():
-                                game.block_edge(edge[0], edge[1])
-
-                            current_player.walls_remaining -= 1
-                            game.switch_turn()
+                clicked_wall = get_wall_position(mouse_x, mouse_y)
+                if clicked_wall:
+                    orientation, row, col = clicked_wall
+                    game.place_wall(current_player, orientation, row, col)
 
     if current_state == GameState.MAIN_MENU:
         menu.draw(screen)
     elif current_state == GameState.PLAYING:
         screen.fill(BACKGROUND_COLOR)
 
-        game.board.draw(screen, game.board)
+        game.board.draw(screen)
         draw_valid_moves(game.current_player())
         draw_wall_preview()
         for wall in game.walls:
